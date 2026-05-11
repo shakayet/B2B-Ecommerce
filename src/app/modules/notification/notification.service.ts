@@ -1,4 +1,3 @@
-// services/notification.service.ts
 import admin from '../../../config/firebase';
 import {
   NotificationModel,
@@ -10,8 +9,6 @@ import {
   SendNotificationResult,
 } from './notification.interface';
 import { Types } from 'mongoose';
-
-// Save or update FCM token when user login.
 
 const saveFCMToken = async (
   userId: string,
@@ -34,8 +31,6 @@ const saveFCMToken = async (
   return await newNotification.save();
 };
 
-// Send notification to all devices of a user
-
 const CHUNK_SIZE = 200;
 
 const sendCustomNotification = async (
@@ -43,10 +38,8 @@ const sendCustomNotification = async (
   description: string,
   contentId?: Types.ObjectId
 ): Promise<SendNotificationResult> => {
-  // Get all devices
   const devices = await NotificationModel.find();
 
-  // Map tokens with userId as string
   const tokenUserMap: { token: string; userId?: string }[] = devices
     .filter(d => d.fcmToken)
     .map(d => ({ token: d.fcmToken, userId: d.userId?.toString() }));
@@ -55,7 +48,6 @@ const sendCustomNotification = async (
     return { success: false, message: 'No devices found' };
   }
 
-  // Split into batches
   const batches: { token: string; userId?: string }[][] = [];
   for (let i = 0; i < tokenUserMap.length; i += CHUNK_SIZE) {
     batches.push(tokenUserMap.slice(i, i + CHUNK_SIZE));
@@ -72,7 +64,6 @@ const sendCustomNotification = async (
 
       const response = await admin.messaging().sendEachForMulticast(message);
 
-      // Save history for each token with its userId
       await Promise.all(
         batch.map(({ token, userId }) =>
           NotificationHistoryModel.create({
@@ -92,7 +83,6 @@ const sendCustomNotification = async (
   return { success: true, response: batchResults };
 };
 
-//Mark the read and unread notification...
 const markNotificationAsRead = async (notificationId: string) => {
   return NotificationHistoryModel.findByIdAndUpdate(
     notificationId,

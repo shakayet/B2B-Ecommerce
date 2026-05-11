@@ -6,11 +6,9 @@ import router from './routes';
 import { Morgan } from './shared/morgen';
 const app = express();
 
-//morgan
 app.use(Morgan.successHandler);
 app.use(Morgan.errorHandler);
 
-//body parser
 app.use(
   cors({
     origin: [
@@ -26,13 +24,10 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//file retrieve
 app.use(express.static('uploads'));
 
-//router
 app.use('/api/v1', router);
 
-//live response
 app.get('/', (req: Request, res: Response) => {
   const date = new Date(Date.now());
   res.send(
@@ -42,10 +37,8 @@ app.get('/', (req: Request, res: Response) => {
   );
 });
 
-//global error handle
 app.use(globalErrorHandler);
 
-//handle not found route;
 app.use((req, res) => {
   res.status(StatusCodes.NOT_FOUND).json({
     success: false,

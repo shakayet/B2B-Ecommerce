@@ -19,7 +19,6 @@ export class OrderService {
     this.creditService = new CreditService();
   }
 
-    // Helper to generate order number inside a transaction
   private async generateOrderNumber(session: mongoose.ClientSession): Promise<string> {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
@@ -46,7 +45,6 @@ export class OrderService {
       );
       if (!canPlaceOrder) throw new Error('Insufficient credit limit');
 
-      // Validate and update product stock
       for (const item of orderData.items) {
         const product = await ProductModel.findById(item.productId).session(session);
         if (!product) throw new Error(`Product ${item.productId} not found`);
@@ -72,14 +70,12 @@ export class OrderService {
 
       const token = await this.quickBooksService.getValidToken();
         
-      // Create QuickBooks customer if not exists
       if (!user.quickbooksId) {
         const qbCustomerId = await this.quickBooksService.createCustomer(user, token?.realmId || '', token?.accessToken || '');
         user.quickbooksId = qbCustomerId;
         await User.updateOne({ _id: user._id }, { $set: { quickbooksId: qbCustomerId } }).session(session);
       }
 
-      // Create invoice in QuickBooks
       const invoice = await this.quickBooksService.createInvoice(order, user, token?.realmId || '', token?.accessToken || '');
       order.quickbooksInvoiceId = invoice.invoiceId;
       order.invoiceNumber = invoice.invoiceNumber;
@@ -94,7 +90,6 @@ export class OrderService {
       };
       const forgetPassword = emailTemplate.invoicePaymentLinkEmail(value);
       emailHelper.sendEmail(forgetPassword);
-
 
       await order.save({ session });
 

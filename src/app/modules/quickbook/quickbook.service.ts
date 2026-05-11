@@ -12,38 +12,28 @@ export class QuickBooksService {
     this.qbConfig = QuickBooksConfig.getInstance();
   }
 
-  /**
-   * Ensure a valid access token for the user
-   */
   async getValidToken() {
-    // Find token in DB
     const token = await QuickBooksToken.findOne();
     if (!token) throw new Error('QuickBooks not connected');
 
-    // Refresh token if expired
     if (token.expiresAt < new Date()) {
       if (!this.qbConfig.refreshAccessToken) {
         throw new Error('QuickBooksConfig does not expose refreshAccessToken method');
       }
 
-      // Call refresh method safely
       const refreshed = await this.qbConfig.refreshAccessToken(token.refreshToken);
       if (!refreshed || !refreshed.access_token) {
         throw new Error('Failed to refresh QuickBooks token');
       }
 
       token.accessToken = refreshed.access_token;
-      token.refreshToken = refreshed.refresh_token || token.refreshToken; // keep old if undefined
+      token.refreshToken = refreshed.refresh_token || token.refreshToken;
       token.expiresAt = new Date(Date.now() + (refreshed.expires_in || 3600) * 1000);
       await token.save();
     }
 
     return token;
   }
-
-  // =====================================================
-  // ✅ CREATE OR GET CUSTOMER
-  // =====================================================
 
   async createCustomer(
     user: IUser,
@@ -59,20 +49,12 @@ export class QuickBooksService {
       const baseUrl = this.qbConfig.getBaseUrl(realmId);
       const headers = await this.qbConfig.getHeaders(realmId, accessToken);
 
-      // ----------------------------
-      // Split user name safely
-      // ----------------------------
-
       const nameParts = (user.name || '').split(' ');
       const givenName = nameParts[0] || 'N/A';
       const familyName = nameParts[1] || 'N/A';
 
       const displayName =
         user.businessName || `${givenName} ${familyName}`;
-
-      // =================================================
-      // ✅ STEP 1: SEARCH EXISTING CUSTOMER
-      // =================================================
 
       const query = `
         SELECT * FROM Customer
@@ -94,10 +76,6 @@ export class QuickBooksService {
         );
         return existingCustomer.Id;
       }
-
-      // =================================================
-      // ✅ STEP 2: CREATE CUSTOMER
-      // =================================================
 
       const customerData: any = {
         DisplayName: displayName,

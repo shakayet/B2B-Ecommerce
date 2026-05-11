@@ -18,7 +18,6 @@ import { ResetToken } from '../resetToken/resetToken.model';
 import { User } from '../user/user.model';
 import { NotificationService } from '../notification/notification.service';
 
-//login
 const loginUserFromDB = async (payload: ILoginData) => {
   const { email, password, fcmToken } = payload;
   const isExistUser = await User.findOne({ email }).select('+password');
@@ -26,7 +25,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  //check verified and status
   if (!isExistUser.verified) {
     throw new ApiError(
       StatusCodes.BAD_REQUEST,
@@ -34,7 +32,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     );
   }
 
-  // check user status
   if (isExistUser.status === 'pending') {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -42,7 +39,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     );
   }
 
-  // check user status
   if (isExistUser.status === 'block') {
     throw new ApiError(
       StatusCodes.FORBIDDEN,
@@ -57,7 +53,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
     );
   }
 
-  //check match password
   if (
     password &&
     !(await User.isMatchPassword(password, isExistUser.password))
@@ -65,14 +60,12 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
   }
 
-  //create token
   const createToken = jwtHelper.createToken(
     { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );
 
-  // 2️⃣ Save FCM token if provided
   if (fcmToken && isExistUser.role !== 'ADMIN') {
     console.log('Notification running');
     await NotificationService.saveFCMToken(
@@ -88,14 +81,12 @@ const loginUserFromDB = async (payload: ILoginData) => {
   return { createToken, role };
 };
 
-//forget password
 const forgetPasswordToDB = async (email: string) => {
   const isExistUser = await User.isExistUserByEmail(email);
   if (!isExistUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  //send mail
   const otp = generateOTP();
   const value = {
     otp,

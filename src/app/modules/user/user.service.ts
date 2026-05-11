@@ -16,9 +16,7 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (existingUser) {
     throw new Error('User already exists with this email');
   }
-  //set role
   payload.role = USER_ROLES.USER;
-  // Initialize credit info
   payload.creditInfo = {
     creditLimit: 0,
     currentOutstanding: 0,
@@ -31,7 +29,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
   }
 
-  //send email
   const otp = generateOTP();
   const values = {
     name: createUser.name,
@@ -41,7 +38,6 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   const createAccountTemplate = emailTemplate.createAccount(values);
   emailHelper.sendEmail(createAccountTemplate);
 
-  //save to DB
   const authentication = {
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
@@ -76,7 +72,6 @@ const updateProfileToDB = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  //unlink file here
   if (payload.image) {
     unlinkFile(isExistUser.image);
   }
@@ -93,7 +88,6 @@ const updateUserProfileStatusToDB = async (
   status?: string,
   customerType?: string,
 ) => {
-  // Prepare the update object
   const updateData: Partial<{ status: string; customerType: string }> = {};
 
   const allowedStatuses = ['pending', 'approve', 'block', 'unblock', 'reject'];
